@@ -63,5 +63,3 @@ dkms.conf
 *.bin
 *.tmp
 .venv/
-*.bin
-*.tmp
