@@ -9,3 +9,7 @@ Shellcode Loader With a Cocktail of Techniques
 
 ## Post compilation steps
 - Sign the Binary (Legitimate Certificate or LazySign)
+
+## Branch Description
+- This version carries the shellcode within itself, hence diskload.
+- Would ideally want to shift to a branch which fetches the shellcode/key etc remotely.
