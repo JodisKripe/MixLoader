@@ -60,3 +60,5 @@ dkms.conf
 
 #Custom
 .vs/
+.venv/
+*.bin
