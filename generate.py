@@ -37,7 +37,6 @@ def generate_random_key():
 
 generate_random_key()
 
-if(a)
 
 arc4 = ARC4(key)
 cipher = arc4.encrypt(buf)
