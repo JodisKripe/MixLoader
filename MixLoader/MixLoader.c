@@ -259,7 +259,7 @@ int main(int argc, char* argv[]) {
 		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
 #else
-		error("Provide the PID of the process to inject calc into, the host, the key and the cipher \n%s <PID> <HOST> <key.bin> <cipher.bin>", argv[0]);
+		error("Provide the PID of the process to inject calc into, the host, the key and the cipher \n%s <PID> <HOST> <PORT> <key.bin> <cipher.bin>", argv[0]);
 		return 1;
 #endif
 	}
