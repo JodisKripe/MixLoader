@@ -15,5 +15,5 @@ Shellcode Loader With a Cocktail of Techniques
 - This will fetch the shellcode and the rc4 key from a remote source, rest is the same as diskload
 
 ## O-LLVM
-The current configuration picks the clang.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
+The current configuration picks the clang-cl.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
 - [ ] Compile O-LLVM yourself
