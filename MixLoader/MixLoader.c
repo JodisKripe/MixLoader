@@ -125,11 +125,6 @@ int DownloadHttpToMemory(const char* host, char* port, const char* path, struct 
 	char recvbuf[4096];
 	int bytes;
 
-	char newHost[100] = "";
-	strcat_s(newHost, 100, host);
-	strcat_s(newHost, 100, ":");
-	strcat_s(newHost, 100, port);
-
 	outMem->data = NULL;
 	outMem->size = 0;
 
