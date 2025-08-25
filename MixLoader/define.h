@@ -13,8 +13,6 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
     printf("[*] Now Exiting. T-T See Ya."); \
     return EXIT_FAILURE;
 
-
-
 DWORD NtOpenProcessSSN = 0;
 DWORD NtAllocateVirtualMemoryExSSN = 0;
 DWORD NtProtectVirtualMemorySSN = 0;
