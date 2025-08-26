@@ -12,7 +12,7 @@ Shellcode Loader With a Cocktail of Techniques
 - Sign the Binary (Legitimate Certificate or LazySign)
 
 ## Branch Description
-- This will fetch the shellcode and the rc4 key from a remote source, rest is the same as diskload
+- This will fetch the shellcode and the aes key from a remote source, rest is the same as diskload
 
 ## O-LLVM
 The current configuration picks the clang-cl.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
