@@ -14,6 +14,10 @@ Shellcode Loader With a Cocktail of Techniques
 ## Branch Description
 - This will fetch the shellcode and the rc4 key from a remote source, rest is the same as diskload
 
+## Overall Goals
+- [X] Add Branch for AES Encryption for the shellcode
+- [ ] Add sleep obfuscation 
+
 ## O-LLVM
 The current configuration picks the clang-cl.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
 - [ ] Compile O-LLVM yourself
