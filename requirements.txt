@@ -1,1 +1,9 @@
+## Requirements
+# If requirements break for some reason, you can remove the ones required for a function not in the current branch.
+
+
+# RC4
 arc4
+
+# AES
+#pycryptodome
