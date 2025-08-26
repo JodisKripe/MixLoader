@@ -21,3 +21,6 @@ Shellcode Loader With a Cocktail of Techniques
 ## O-LLVM
 The current configuration picks the clang-cl.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
 - [ ] Compile O-LLVM yourself
+
+# Note 
+Further development will be done on Self injection or similar.
