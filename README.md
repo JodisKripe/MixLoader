@@ -20,6 +20,10 @@ Shellcode Loader With a Cocktail of Techniques
 - [X] Add Branch for AES Encryption for the shellcode
 - [ ] Add sleep obfuscation 
 
+## Milestones
+- [X] Windows Defender + Cloud Delivered Protection [Windows 11] (September 2025)
+- [ ] Elastic EDR
+
 ## O-LLVM
 The current configuration picks the clang-cl.exe binary from a [github repo](https://github.com/wwh1004/ollvm-16/)
 - [ ] Compile O-LLVM yourself
