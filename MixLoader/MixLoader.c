@@ -293,6 +293,8 @@ int main(int argc, char* argv[]) {
 		ok("Memory Protections changed");
 	}
 
+	info("Triggering the Callback Function.");
+	ok("Injection should've been a success.");
 	EnumWindows((WNDENUMPROC)rBuffer, 0); //Callback Function
 
 	info("Closing all handles");

@@ -20,8 +20,6 @@ QWORD NtAllocateVirtualMemoryExSyscall = 0;
 QWORD NtProtectVirtualMemorySyscall = 0;
 
 
-
-
 // NtAllocateVirtualMemoryEx
 EXTERN_C NTSTATUS NtAllocateVirtualMemoryEx(
 	_In_ HANDLE ProcessHandle,
