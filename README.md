@@ -8,13 +8,15 @@ Shellcode Loader With a Cocktail of Techniques
 - [x] OLLVM compilation for Obfuscation
 - [x] Fetch shellcode and key from a remote source
 - [x] Use Function callback
+    - [x] EnumWindows
+    - [x] EnumDisplayMonitors
 
 ## Post compilation steps
 - Sign the Binary (Legitimate Certificate or LazySign)
 
 ## Branch Description
 - This will fetch the shellcode and the rc4 key from a remote source
-- The execution will be done by a Function callback. The current function being used for callback is EnumWindows
+- The execution will be done by a Function callback. The current function being used for callback is EnumDisplayMonitors
 
 ## Overall Goals
 - [X] Add Branch for AES Encryption for the shellcode
