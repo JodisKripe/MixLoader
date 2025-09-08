@@ -11,7 +11,6 @@ extern NtProtectVirtualMemorySyscall:QWORD
 
 .code
 
-
 NtAllocateVirtualMemoryEx PROC
 		mov r10, rcx
 		mov eax, NtAllocateVirtualMemoryExSSN

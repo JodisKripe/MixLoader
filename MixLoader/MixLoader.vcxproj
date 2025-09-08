@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="define.h" />
+    <ClInclude Include="PEBParsing.h" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="syscalls.asm">

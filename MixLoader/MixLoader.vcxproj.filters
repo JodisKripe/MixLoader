@@ -23,6 +23,9 @@
     <ClInclude Include="define.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="PEBParsing.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <MASM Include="syscalls.asm">
